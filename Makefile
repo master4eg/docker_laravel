@@ -75,6 +75,17 @@ composer:
 fresh:
 	$(MAKE) artisan CMD="migrate:fresh --seed"
 
+
+# ==== Mail ====
+mail-up:
+	@$(DC) up -d mailhog
+
+mail-down:
+	@$(DC) stop mailhog
+
+mail-logs:
+	@$(DC) logs -f --tail=200 mailhog
+
 # ==== Packaging ====
 
 # Имя проекта = имя текущей папки
