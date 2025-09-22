@@ -5,8 +5,12 @@ ARG PGID=1000
 
 # Ставим системные пакеты и необходимые расширения PHP
 RUN set -eux; \
-    apk add --no-cache git curl unzip libzip-dev icu-dev oniguruma-dev shadow bash autoconf gcc g++ make; \
-    docker-php-ext-install pdo_mysql intl mbstring opcache zip; \
+    apk add --no-cache \
+      git curl unzip bash shadow autoconf gcc g++ make \
+      libzip-dev icu-dev oniguruma-dev \
+      freetype-dev libjpeg-turbo-dev libpng-dev libwebp-dev; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
+    docker-php-ext-install -j$(nproc) pdo_mysql intl mbstring opcache zip exif gd; \
     # Настраиваем пользователя www-data под UID/GID хоста
     groupmod -o -g ${PGID} www-data; \
     usermod  -o -u ${PUID} -g ${PGID} www-data; \
