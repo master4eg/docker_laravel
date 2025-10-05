@@ -7,7 +7,18 @@ GID := $(shell id -g)
 export PUID := $(UID)
 export PGID := $(GID)
 
-DC := PUID=$(PUID) PGID=$(PGID) docker compose --env-file .env.docker
+SRC_DIR := src
+ARTISAN := $(SRC_DIR)/artisan
+ENV_FILE := $(SRC_DIR)/.env
+ENV_EXAMPLE := $(SRC_DIR)/.env.example
+
+PROJECT_NAME := $(notdir $(CURDIR))
+PROJECT_HASH := $(shell printf '%s' "$(CURDIR)" | md5sum | cut -c1-6)
+PROJECT_SLUG := $(shell printf '%s' "$(PROJECT_NAME)" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-')
+COMPOSE_PROJECT_NAME := $(PROJECT_SLUG)-$(PROJECT_HASH)
+export COMPOSE_PROJECT_NAME := $(COMPOSE_PROJECT_NAME)
+
+DC := COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME) PUID=$(PUID) PGID=$(PGID) docker compose --env-file .env.docker
 
 .PHONY: up down build restart logs ps sh init artisan composer key perms fresh \
         archive archive-full mail-up mail-down mail-logs help quickstart
@@ -46,7 +57,7 @@ sh: ## Войти в контейнер php (www-data) с интерактивн
 ##@ Laravel
 
 init: up ## Инициализация проекта: создать Laravel (если нет), .env, key, права
-	@if [ -f artisan ]; then \
+	@if [ -f $(ARTISAN) ]; then \
 		$(MAKE) key; \
 		$(MAKE) perms; \
 		echo "✅ Laravel уже установлен. Обновил ключ и права. Открой: http://localhost:8080"; \
@@ -63,21 +74,21 @@ init: up ## Инициализация проекта: создать Laravel (�
 		cd /var/www/html; \
 		composer install --no-interaction; \
 	'
-	@[ -f .env ] || cp .env.example .env
+	@[ -f $(ENV_FILE) ] || cp $(ENV_EXAMPLE) $(ENV_FILE)
 	$(MAKE) key
 	$(MAKE) perms
 	@echo "✅ Laravel готов: http://localhost:8080"
 
 key: ## Сгенерировать APP_KEY (если есть artisan)
-	@if [ -f artisan ]; then $(DC) exec -u www-data php php artisan key:generate --force; fi
+	@if [ -f $(ARTISAN) ]; then $(DC) exec -u www-data php php artisan key:generate --force; fi
 
 perms: ## Починить права storage и bootstrap/cache
-	@mkdir -p storage
-	@mkdir -p bootstrap/cache
+	@mkdir -p $(SRC_DIR)/storage
+	@mkdir -p $(SRC_DIR)/bootstrap/cache
 	@$(DC) exec -u root php bash -lc "chown -R www-data:www-data /var/www/html && find storage -type d -exec chmod 775 {} \; && find storage -type f -exec chmod 664 {} \; && chmod -R 775 bootstrap/cache"
 
 artisan: ## Выполнить php artisan <CMD> внутри контейнера (пример: make artisan CMD="migrate")
-	@if [ -f artisan ]; then $(DC) exec -u www-data php php artisan $(CMD); else echo "❌ Нет Laravel (artisan). Запусти: make init"; fi
+	@if [ -f $(ARTISAN) ]; then $(DC) exec -u www-data php php artisan $(CMD); else echo "❌ Нет Laravel (artisan). Запусти: make init"; fi
 
 composer: ## Выполнить composer <CMD> в контейнере (пример: make composer CMD="require spatie/laravel-medialibrary:^11")
 	$(DC) run --rm -u www-data php bash -lc "composer $(CMD)"
@@ -97,8 +108,6 @@ mail-logs: ## Логи MailHog
 	@$(DC) logs -f --tail=200 mailhog
 
 ##@ Packaging
-
-PROJECT_NAME := $(notdir $(CURDIR))
 DATE := $(shell date +%Y%m%d-%H%M%S)
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo nogit)
 DIST_DIR := .dist
