@@ -1,4 +1,4 @@
-services:
+﻿services:
   nginx:
     image: nginx:1.27-alpine
     depends_on:
@@ -46,10 +46,24 @@ services:
     networks:
       - app
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - app
+
   mailhog:
     image: mailhog/mailhog
     ports:
-      - "8025:8025"   # веб-интерфейс
+      - "8025:8025"   # MailHog web UI
     networks:
       - app
 
@@ -60,3 +74,4 @@ networks:
 volumes:
   db_data:
   composer_cache:
+  redis_data:

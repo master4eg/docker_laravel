@@ -6,6 +6,7 @@ Local Docker environment for fast Laravel onboarding with PHP-FPM 8.3, Nginx, My
 - php: php:8.3-fpm-alpine with Composer, GD, Intl, Mbstring, Zip, Opcache, and other common extensions.
 - nginx: serves the public directory and forwards PHP requests to php-fpm.
 - mysql: MySQL 8 with utf8mb4 defaults and an init script that creates the laravel database.
+- redis: Redis 7 for caching, queues, and broadcasts (phpredis extension pre-installed).
 - mailhog: lightweight SMTP catcher with a browser UI.
 
 ## Prerequisites
@@ -19,6 +20,7 @@ Local Docker environment for fast Laravel onboarding with PHP-FPM 8.3, Nginx, My
 3. Open http://localhost:8080 to verify the app is reachable.
 4. Database is exposed on localhost:33060 (user root, empty password, database laravel).
 5. MailHog UI is available on http://localhost:8025 after make mail-up.
+6. Redis is exposed on localhost:6379 and used by default for cache, queues, and sessions.
 
 ## Common Make Targets
 - make up: build and start the stack in detached mode.
@@ -47,7 +49,7 @@ Local Docker environment for fast Laravel onboarding with PHP-FPM 8.3, Nginx, My
 
 ## Notes
 - Adjust service ports in docker-compose.yml or override values in .env.docker as needed.
-- Named volumes (db_data, composer_cache) persist database records and the Composer cache across restarts.
+- Named volumes (db_data, composer_cache, redis_data) persist database records and the Composer cache across restarts.
 - Consider adding an opt-in Xdebug profile to docker-compose.yml if you need step debugging.
 
 Happy coding!

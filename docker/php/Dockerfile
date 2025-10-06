@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+﻿FROM php:8.3-fpm-alpine
 
 ARG PUID=1000
 ARG PGID=1000
@@ -11,6 +11,10 @@ RUN set -eux; \
       freetype-dev libjpeg-turbo-dev libpng-dev libwebp-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j$(nproc) pdo_mysql intl mbstring opcache zip exif gd; \
+    # Redis extension
+    pecl install redis; \
+    docker-php-ext-enable redis; \
+    rm -rf /tmp/pear; \
     # Настраиваем пользователя www-data под UID/GID хоста
     groupmod -o -g ${PGID} www-data; \
     usermod  -o -u ${PUID} -g ${PGID} www-data; \
